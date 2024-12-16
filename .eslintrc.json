@@ -1,0 +1,118 @@
+{
+    "extends": [
+        "eslint:recommended",
+        "plugin:import/recommended",
+        "plugin:import/typescript",
+        "plugin:@typescript-eslint/recommended",
+        "prettier",
+        "airbnb-base",
+        "airbnb-typescript/base",/*, "plugin:jest/recommended"*/
+        "plugin:deprecation/recommended"
+    ],
+    "plugins": [
+        "@typescript-eslint",
+        "eslint-plugin-jest",
+        "no-relative-import-paths",
+        "prettier",
+        "import",
+        "simple-import-sort"
+    ],
+    "ignorePatterns": ["node_modules/", "dist", "src/generated", "src/schemas"],
+    "parserOptions": {
+        "project": "./tsconfig.json"
+    },
+    "env": {
+        "jest/globals": true
+    },
+    "rules": {
+        "no-nested-ternary": "off",
+        "no-confusing-arrow": "off",
+        "import/prefer-default-export": "off",
+        "prettier/prettier": [
+            "error",
+            {
+                "singleQuote": true,
+                "trailingComma": "all",
+                "printWidth": 80,
+                "tabWidth": 4,
+                "useTabs": false,
+                "semi": true,
+                "jsxSingleQuote": false,
+                "bracketSpacing": true,
+                "arrowParens": "avoid",
+                "importOrderSeparation": true
+            }
+        ],
+        "function-paren-newline": "off",
+        "implicit-arrow-linebreak": "off",
+        "object-curly-newline": "off",
+        "operator-linebreak": "off",
+        "import/no-named-as-default-member": "off",
+        "import/no-named-as-default": "off",
+        "import/first": "error",
+        "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
+        "import/newline-after-import": "error",
+        "import/no-duplicates": "error",
+        "import/extensions": [
+            "error",
+            "never",
+            {
+                "json": "always",
+                "svg": "always",
+                "jpg": "always",
+                "png": "always"
+            }
+        ],
+        "no-relative-import-paths/no-relative-import-paths": [
+            "warn",
+            { "allowSameFolder": false, "rootDir": "src", "allowedDepth": 1,
+                "prefix": "@"
+            }
+        ],
+        "@typescript-eslint/consistent-type-imports": [
+            "error",
+            {
+                "prefer": "type-imports",
+                "fixStyle": "separate-type-imports",
+                "disallowTypeAnnotations": true
+            }
+        ],
+        "simple-import-sort/imports": ["error", {
+            "groups": [
+                ["@/env"],
+                ["^\\w"],
+                ["^@/utils"],
+                ["^@/"],
+                ["^[./]"]
+            ]
+        }],
+        "simple-import-sort/exports": "error",
+        "import/order": "off",
+
+        // Fix Airbnb's config
+        "indent": "off",
+        "@typescript-eslint/indent": "off",
+
+        "no-console": "off",
+
+        "no-restricted-syntax": ["error", "ForInStatement", "LabeledStatement", "WithStatement"],
+
+        "max-len": "off",
+
+        "no-useless-return": "off",
+
+        "import/no-extraneous-dependencies": ["error", { "devDependencies": true }],
+
+        "@typescript-eslint/lines-between-class-members": "off",
+
+        "@typescript-eslint/explicit-function-return-type": ["error", {
+            "allowExpressions": true,
+            "allowTypedFunctionExpressions": true,
+            "allowHigherOrderFunctions": true
+        }],
+
+        "no-continue": "off",
+
+        "arrow-parens": ["error", "as-needed"]
+    }
+}
