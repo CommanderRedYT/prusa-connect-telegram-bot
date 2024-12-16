@@ -123,7 +123,9 @@ export const handleUpdates = async (): Promise<void> => {
         // console.log('job_info', printer.job_info);
 
         if (printer.job_info) {
-            const jobIsDone = printer.job_info.progress === 100;
+            const jobIsRunning =
+                printer.job_info.progress !== 100 &&
+                printer.printer_state !== 'STOPPED';
             const lastUpdate = lastUpdates[printerId];
             const lastUpdateAgo = moment().diff(lastUpdate);
 
@@ -167,15 +169,7 @@ export const handleUpdates = async (): Promise<void> => {
                 );
             };
 
-            if (jobIsDone) {
-                // job is done
-                console.log('job is done for printer', printer.name);
-                if (previousPrinter.job_info?.progress !== 100) {
-                    const str = `Print job on ${printer.name} is done!`;
-
-                    await sendMessageForSpecificPrinter(printer.uuid, str);
-                }
-            } else {
+            if (jobIsRunning) {
                 // job still running
                 console.log('job is still running for printer', printer.name);
 
@@ -204,6 +198,14 @@ export const handleUpdates = async (): Promise<void> => {
                 const str = `Print job on ${printer.name} is now at ${printer.job_info.progress}%${timeRemaining}`;
 
                 await sendMessage(str);
+            } else {
+                // job is done
+                console.log('job is done for printer', printer.name);
+                if (previousPrinter.job_info?.progress !== 100) {
+                    const str = `Print job on ${printer.name} is done!`;
+
+                    await sendMessageForSpecificPrinter(printer.uuid, str);
+                }
             }
         }
     }
