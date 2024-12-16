@@ -131,3 +131,5 @@ dist
 
 # macOS
 .DS_Store
+debug/
+database.db

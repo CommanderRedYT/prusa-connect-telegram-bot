@@ -88,7 +88,7 @@ jobs:
           flavor: |
             latest=true
           images: |
-            ghcr.io/${{ github.repository }}=${{ github.sha }}
+            ghcr.io/${{ github.repository }}
 
       - name: Build and push Docker image
         id: push
