@@ -130,6 +130,15 @@ export enum JobState {
     FIN_STOPPED = 'FIN_STOPPED',
 }
 
+export const jobInfoStateToString = (state: JobState): string => {
+    switch (state) {
+        case JobState.FIN_STOPPED:
+            return 'STOPPED';
+        default:
+            return `Unknown (${state})`;
+    }
+};
+
 export interface JobInfo {
     origin_id: number;
     id: number;

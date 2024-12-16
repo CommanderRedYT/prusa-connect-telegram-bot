@@ -15,6 +15,7 @@ import {
     unsubscribeFromPrinter,
     verifyUser,
 } from '@/store';
+import { jobInfoStateToString } from '@/types/prusa';
 
 const registerCommands = async (): Promise<boolean> => {
     console.info('Registering commands');
@@ -272,6 +273,7 @@ const registerCommands = async (): Promise<boolean> => {
                 const response = dedent`
                 <b>Job status for ${printer.name}:</b>
                 Printing ${printer.job_info.display_name}
+                Status: ${jobInfoStateToString(printer.job_info.state)}
                 Progress: ${printer.job_info.progress}%
                 Printing since: ${moment().subtract(printer.job_info.time_printing, 'seconds').format('HH:mm:ss DD.MM.YYYY')}
                 Estimated time remaining: ${moment.duration(printer.job_info.time_remaining, 'seconds').humanize()}
