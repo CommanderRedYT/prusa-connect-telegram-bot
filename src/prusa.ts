@@ -15,7 +15,8 @@ let previousPrinterStates: Record<string, Printer> = {};
 
 const lastUpdates: Record<string, moment.Moment> = {};
 
-const timeout = 1000 * 60; // 1 minutes
+const maximumTimeout = 1000 * 60 * 30; // 30 minutes
+const minimumTimeout = 1000 * 30; // 30 seconds
 
 const WRITE_DEBUG_FILES = process.env.WRITE_DEBUG_FILES === 'true';
 
@@ -108,7 +109,18 @@ export const handleUpdates = async (): Promise<void> => {
             const lastUpdate = lastUpdates[printerId];
             const lastUpdateAgo = moment().diff(lastUpdate);
 
-            const shouldNotify = !lastUpdate || lastUpdateAgo > timeout;
+            let shouldNotify =
+                !lastUpdate ||
+                (lastUpdateAgo > maximumTimeout &&
+                    lastUpdateAgo < minimumTimeout);
+
+            if (
+                printer.job_info.progress !==
+                    previousPrinter.job_info?.progress &&
+                lastUpdateAgo > minimumTimeout
+            ) {
+                shouldNotify = true;
+            }
 
             if (shouldNotify) {
                 lastUpdates[printerId] = moment();
@@ -120,12 +132,12 @@ export const handleUpdates = async (): Promise<void> => {
                 options?: SendMessageOptions,
             ): Promise<void> => {
                 if (!shouldNotify) {
-                    const willNotifyIn = timeout - lastUpdateAgo;
+                    const willNotifyIn = maximumTimeout - lastUpdateAgo;
                     const formattedTime = moment
                         .duration(willNotifyIn, 'milliseconds')
                         .humanize();
                     console.info(
-                        `Not notifying for printer ${printer.name}, will notify again in ${formattedTime}`,
+                        `Not notifying for printer ${printer.name}, will notify again in (latest time possible) ${formattedTime}`,
                     );
                     return;
                 }
@@ -158,7 +170,15 @@ export const handleUpdates = async (): Promise<void> => {
                     );
                     const formattedTime = duration.humanize();
 
-                    const doneAt = moment().add(duration).fromNow();
+                    // for doneAt, use calendar
+                    const doneAt = moment().add(duration).calendar({
+                        sameDay: '[today at] HH:mm',
+                        nextDay: '[tomorrow at] HH:mm',
+                        nextWeek: 'dddd [at] HH:mm',
+                        lastDay: '[yesterday at] HH:mm',
+                        lastWeek: '[last] dddd [at] HH:mm',
+                        sameElse: 'DD.MM.YYYY [at] HH:mm',
+                    });
 
                     timeRemaining = ` (${formattedTime} remaining, ${doneAt})`;
                 }
