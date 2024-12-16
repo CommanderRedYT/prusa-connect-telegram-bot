@@ -3,18 +3,22 @@ export interface PrinterListResponse {
     pager: Pager;
 }
 
+export enum PrinterState {
+    STOPPED = 'STOPPED',
+}
+
 export interface Printer {
     printer_model: string;
     supported_printer_models: string[];
     printer_type_compatible: string[];
-    printer_state: string;
+    printer_state: PrinterState;
     last_online: number;
     nozzle_diameter: number;
     enclosure: Enclosure;
     tools: Tools;
     slot?: Slot;
     slots?: number;
-    mmu: Mmu2;
+    mmu: MmuStatus;
     connect_state: string;
     filament?: Filament;
     allowed_functionalities: string[];
@@ -32,7 +36,7 @@ export interface Printer {
     rights_w: boolean;
     rights_u: boolean;
     job_info?: JobInfo;
-    temp?: Temp;
+    temp?: Temperature;
     axis_z?: number;
     speed?: number;
     job_queue_count?: number;
@@ -42,6 +46,7 @@ export interface Enclosure {
     present: boolean;
 }
 
+// TODO: Refactor this
 export interface Tools {
     '1': N1;
     '1.1'?: N11;
@@ -86,56 +91,28 @@ export interface N15 {
 }
 
 export interface Slot {
-    slots: Slots;
+    slots: {
+        [key: string]: Nozzle;
+    };
 }
 
-export interface Slots {
-    '1': N16;
-    '2'?: N2;
-    '3'?: N3;
-    '4'?: N4;
-    '5'?: N5;
-}
-
-export interface N16 {
+export interface Nozzle {
     hardened: boolean;
     material: string;
     high_flow: boolean;
     nozzle_diameter: number;
 }
 
-export interface N2 {
-    hardened: boolean;
-    material: string;
-    high_flow: boolean;
-    nozzle_diameter: number;
+export interface MmuStatusEnabled {
+    enabled: true;
+    version: string;
 }
 
-export interface N3 {
-    hardened: boolean;
-    material: string;
-    high_flow: boolean;
-    nozzle_diameter: number;
+export interface MmuStatusDisabled {
+    enabled: false;
 }
 
-export interface N4 {
-    hardened: boolean;
-    material: string;
-    high_flow: boolean;
-    nozzle_diameter: number;
-}
-
-export interface N5 {
-    hardened: boolean;
-    material: string;
-    high_flow: boolean;
-    nozzle_diameter: number;
-}
-
-export interface Mmu2 {
-    enabled: boolean;
-    version?: string;
-}
+export type MmuStatus = MmuStatusEnabled | MmuStatusDisabled;
 
 export interface Filament {
     material: string;
@@ -149,6 +126,10 @@ export interface Disabled {
     auto_harvesting: boolean;
 }
 
+export enum JobState {
+    FIN_STOPPED = 'FIN_STOPPED',
+}
+
 export interface JobInfo {
     origin_id: number;
     id: number;
@@ -158,7 +139,7 @@ export interface JobInfo {
     end: number;
     progress: number;
     preview_url: string;
-    state: string;
+    state: JobState;
     model_weight: number;
     weight_remaining: number;
     print_height: number;
@@ -168,7 +149,7 @@ export interface JobInfo {
     time_remaining: number;
 }
 
-export interface Temp {
+export interface Temperature {
     temp_nozzle: number;
     temp_bed: number;
     target_nozzle: number;
