@@ -63,6 +63,24 @@ export const getPrinters = async (): Promise<Printer[]> => {
     return printers;
 };
 
+export const getPreviewData = async (
+    printer: Printer,
+): Promise<ArrayBuffer | null> => {
+    if (!printer.job_info?.preview_url) {
+        return null;
+    }
+
+    const headers = getHeaders();
+    const response = await fetch(
+        `${BASE_PATH}${printer.job_info?.preview_url}`,
+        {
+            headers,
+        },
+    );
+
+    return response.arrayBuffer();
+};
+
 export const handleUpdates = async (): Promise<void> => {
     for await (const [printerId, printer] of Object.entries(printerStates)) {
         const previousPrinter = previousPrinterStates[printerId] as

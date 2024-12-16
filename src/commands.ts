@@ -1,10 +1,13 @@
+import dedent from 'dedent-js';
+import moment from 'moment';
+
 import {
     pushRegisteredCommands,
     registerCommand,
     registerHelpCommand,
     registerUnknownCommandHandler,
 } from '@/bot';
-import { getPrinterStates } from '@/prusa';
+import { getPreviewData, getPrinterStates } from '@/prusa';
 import {
     addUserEntry,
     listSubscriptions,
@@ -64,9 +67,7 @@ const registerCommands = async (): Promise<boolean> => {
                 return;
             }
 
-            await bot.sendMessage(msg.chat.id, response, {
-                parse_mode: 'Markdown',
-            });
+            await bot.sendMessage(msg.chat.id, response);
         },
     });
 
@@ -216,9 +217,88 @@ const registerCommands = async (): Promise<boolean> => {
                 return;
             }
 
-            await bot.sendMessage(msg.chat.id, response, {
-                parse_mode: 'Markdown',
-            });
+            await bot.sendMessage(msg.chat.id, response);
+        },
+    });
+
+    registerCommand({
+        name: 'job',
+        description: 'Get the current job status',
+        requiresAuth: true,
+        handler: async (bot, msg) => {
+            const printers = Object.values(getPrinterStates());
+
+            const printersWithJobs = printers.filter(
+                printer => printer.job_info,
+            );
+
+            // ask for printer
+            const names = Array.from(
+                new Set(printersWithJobs.map(printer => printer.name)),
+            );
+
+            if (!names.length) {
+                await bot.sendMessage(msg.chat.id, 'No printers found');
+                return null;
+            }
+
+            // create a menu with all printer names
+            const keyboard = {
+                reply_markup: {
+                    keyboard: names.map(name => [{ text: name }]),
+                    one_time_keyboard: true,
+                },
+            };
+
+            await bot.sendMessage(msg.chat.id, 'Choose a printer:', keyboard);
+
+            return async message => {
+                const printer = printers.find(p => p.name === message.text);
+
+                if (!printer) {
+                    await bot.sendMessage(
+                        msg.chat.id,
+                        'Invalid printer. Please try again.',
+                    );
+
+                    return;
+                }
+
+                if (!printer.job_info) {
+                    await bot.sendMessage(msg.chat.id, 'No job found');
+                    return;
+                }
+
+                const response = dedent`
+                <b>Job status for ${printer.name}:</b>
+                Printing ${printer.job_info.display_name}
+                Progress: ${printer.job_info.progress}%
+                Printing since: ${moment().subtract(printer.job_info.time_printing, 'seconds').format('HH:mm:ss DD.MM.YYYY')}
+                Estimated time remaining: ${moment.duration(printer.job_info.time_remaining, 'seconds').humanize()}
+                `;
+
+                const previewImageArrayBuffer = await getPreviewData(printer);
+
+                const previewImageBuffer = Buffer.from(
+                    previewImageArrayBuffer || new ArrayBuffer(0),
+                );
+
+                if (previewImageArrayBuffer) {
+                    await bot.sendPhoto(
+                        msg.chat.id,
+                        previewImageBuffer,
+                        {
+                            caption: response,
+                            parse_mode: 'HTML',
+                        },
+                        { filename: 'preview.png' },
+                    );
+                } else {
+                    await bot.sendMessage(msg.chat.id, response, {
+                        parse_mode: 'HTML',
+                    });
+                }
+            };
         },
     });
 
