@@ -228,9 +228,9 @@ export const sendToAllAuthedUsers = async (
 ): Promise<void> => {
     const users = await listAuthedUsers();
 
-    users.forEach(user => {
-        bot.sendMessage(user.chat_id, message, options);
-    });
+    for await (const user of users) {
+        await bot.sendMessage(user.chat_id, message, options);
+    }
 };
 
 export const sendToAllAuthedAndSubscribedUsers = async (

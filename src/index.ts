@@ -1,6 +1,7 @@
 import '@/env';
 
 import app from '@/api';
+import { sendToAllAuthedUsers } from '@/bot';
 import { registerCommands } from '@/commands';
 import { startPolling } from '@/prusa';
 import { initDatabase } from '@/store';
@@ -26,6 +27,21 @@ async function main(): Promise<void> {
     app.listen(PORT, HTTP_HOST, () => {
         console.log(`Server is running on http://${HTTP_HOST}:${PORT}`);
     });
+
+    process.on('SIGINT', async () => {
+        await sendToAllAuthedUsers('Bot is stopping...');
+
+        process.exit(0);
+    });
+
+    process.on('SIGTERM', async () => {
+        await sendToAllAuthedUsers('Bot is stopping...');
+
+        process.exit(0);
+    });
+
+    // send message on start
+    await sendToAllAuthedUsers('Bot started');
 
     console.info('Bot is running');
 }
