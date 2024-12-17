@@ -1,9 +1,11 @@
 import type { ExtendedEnv } from '@/env';
 
+import type { Stream } from 'node:stream';
 import type {
     BotCommand,
     Message,
     SendMessageOptions,
+    SendPhotoOptions,
 } from 'node-telegram-bot-api';
 import TelegramBot from 'node-telegram-bot-api';
 
@@ -260,5 +262,21 @@ export const sendMessageForSpecificPrinter = async (
 
     subscribedUsers.forEach(sub => {
         bot.sendMessage(sub.chat_id, message, options);
+    });
+};
+
+export const sendPhotoForSpecificPrinter = async (
+    printerId: string,
+    photo: string | Stream | Buffer,
+    options?: SendPhotoOptions,
+): Promise<void> => {
+    const subscriptions = await listSubscriptions();
+
+    const subscribedUsers = subscriptions.filter(
+        sub => sub.printer_id === printerId,
+    );
+
+    subscribedUsers.forEach(sub => {
+        bot.sendPhoto(sub.chat_id, photo, options);
     });
 };

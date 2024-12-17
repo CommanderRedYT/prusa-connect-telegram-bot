@@ -4,7 +4,10 @@ import moment from 'moment';
 import * as fs from 'node:fs';
 import type { SendMessageOptions } from 'node-telegram-bot-api';
 
-import { sendMessageForSpecificPrinter } from '@/bot';
+import {
+    sendMessageForSpecificPrinter,
+    sendPhotoForSpecificPrinter,
+} from '@/bot';
 import type { Printer, PrinterListResponse } from '@/types/prusa';
 
 const BASE_PATH = 'https://connect.prusa3d.com';
@@ -17,6 +20,8 @@ const lastUpdates: Record<string, moment.Moment> = {};
 
 const maximumTimeout = 1000 * 60 * 30; // 30 minutes
 const minimumTimeout = 1000 * 30; // 30 seconds
+
+const pollingIntervalMs = 10000 * 6; // 10 seconds
 
 const WRITE_DEBUG_FILES = process.env.WRITE_DEBUG_FILES === 'true';
 
@@ -102,16 +107,37 @@ export const handleUpdates = async (): Promise<void> => {
             const path = `./debug/${printerId}`;
             const timestamp = Date.now();
 
+            const printerWithoutChangingProps = {
+                ...printer,
+                last_online: 0,
+                temp: undefined,
+                tools: undefined,
+            } as unknown as Printer;
+
+            const previousPrinterWithoutChangingProps = {
+                ...previousPrinter,
+                last_online: 0,
+                temp: undefined,
+                tools: undefined,
+            } as unknown as Printer;
+
+            const shouldWrite = !deepEqual(
+                printerWithoutChangingProps,
+                previousPrinterWithoutChangingProps,
+            );
+
             if (!fs.existsSync(path)) {
                 fs.mkdirSync(path, {
                     recursive: true,
                 });
             }
 
-            fs.writeFileSync(
-                `${path}/${timestamp}.json`,
-                JSON.stringify(printer, null, 2),
-            );
+            if (shouldWrite) {
+                fs.writeFileSync(
+                    `${path}/${timestamp}.json`,
+                    JSON.stringify(printer, null, 2),
+                );
+            }
         }
 
         if (printer.connect_state !== previousPrinter.connect_state) {
@@ -173,42 +199,70 @@ export const handleUpdates = async (): Promise<void> => {
                 );
             };
 
-            if (jobIsRunning) {
-                // job still running
-                console.log('job is still running for printer', printer.name);
+            if (jobIsRunning && !jobWasRunning) {
+                const str = `Print job "${printer.job_info.display_name}" on ${printer.name} has started`;
 
-                let timeRemaining = '';
+                // await sendMessage(str);
 
-                if (printer.job_info.time_remaining !== -1) {
-                    const duration = moment.duration(
-                        printer.job_info.time_remaining,
-                        'seconds',
+                const previewImageArrayBuffer = await getPreviewData(printer);
+
+                const previewImageBuffer = Buffer.from(
+                    previewImageArrayBuffer || new ArrayBuffer(0),
+                );
+
+                if (previewImageArrayBuffer) {
+                    await sendPhotoForSpecificPrinter(
+                        printer.uuid,
+                        previewImageBuffer,
+                        {
+                            caption: str,
+                            parse_mode: 'HTML',
+                        },
                     );
-                    const formattedTime = duration.humanize();
-
-                    // for doneAt, use calendar
-                    const doneAt = moment().add(duration).calendar({
-                        sameDay: '[today at] HH:mm',
-                        nextDay: '[tomorrow at] HH:mm',
-                        nextWeek: 'dddd [at] HH:mm',
-                        lastDay: '[yesterday at] HH:mm',
-                        lastWeek: '[last] dddd [at] HH:mm',
-                        sameElse: 'DD.MM.YYYY [at] HH:mm',
-                    });
-
-                    timeRemaining = ` (${formattedTime} remaining, ${doneAt})`;
+                } else {
+                    await sendMessage(str);
                 }
+            } else {
+                if (jobIsRunning) {
+                    // job still running
+                    console.log(
+                        'job is still running for printer',
+                        printer.name,
+                    );
 
-                const str = `Print job on ${printer.name} is now at ${printer.job_info.progress}%${timeRemaining}`;
+                    let timeRemaining = '';
 
-                await sendMessage(str);
-            } else if (jobWasRunning) {
-                // job is done
-                console.log('job is done for printer', printer.name);
-                if (previousPrinter.job_info?.progress !== 100) {
-                    const str = `Print job on ${printer.name} is done!`;
+                    if (printer.job_info.time_remaining !== -1) {
+                        const duration = moment.duration(
+                            printer.job_info.time_remaining,
+                            'seconds',
+                        );
+                        const formattedTime = duration.humanize();
 
-                    await sendMessageForSpecificPrinter(printer.uuid, str);
+                        // for doneAt, use calendar
+                        const doneAt = moment().add(duration).calendar({
+                            sameDay: '[today at] HH:mm',
+                            nextDay: '[tomorrow at] HH:mm',
+                            nextWeek: 'dddd [at] HH:mm',
+                            lastDay: '[yesterday at] HH:mm',
+                            lastWeek: '[last] dddd [at] HH:mm',
+                            sameElse: 'DD.MM.YYYY [at] HH:mm',
+                        });
+
+                        timeRemaining = ` (${formattedTime} remaining, ${doneAt})`;
+                    }
+
+                    const str = `Print job on ${printer.name} is now at ${printer.job_info.progress}%${timeRemaining}`;
+
+                    await sendMessage(str);
+                } else if (jobWasRunning) {
+                    // job is done
+                    console.log('job is done for printer', printer.name);
+                    if (previousPrinter.job_info?.progress !== 100) {
+                        const str = `Print job on ${printer.name} is done!`;
+
+                        await sendMessageForSpecificPrinter(printer.uuid, str);
+                    }
                 }
             }
         }
@@ -230,7 +284,7 @@ export const handlePolling = async (): Promise<void> => {
 let pollingInterval: NodeJS.Timeout;
 
 export const startPolling = (): void => {
-    pollingInterval = setInterval(handlePolling, 10000);
+    pollingInterval = setInterval(handlePolling, pollingIntervalMs);
     handlePolling();
 };
 

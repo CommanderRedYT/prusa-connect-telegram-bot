@@ -5,6 +5,7 @@ export interface PrinterListResponse {
 
 export enum PrinterState {
     STOPPED = 'STOPPED',
+    PRINTING = 'PRINTING',
 }
 
 export interface Printer {
@@ -37,6 +38,7 @@ export interface Printer {
     rights_u: boolean;
     job_info?: JobInfo;
     temp?: Temperature;
+    // Measured in millimeters
     axis_z?: number;
     speed?: number;
     job_queue_count?: number;
@@ -128,12 +130,15 @@ export interface Disabled {
 
 export enum JobState {
     FIN_STOPPED = 'FIN_STOPPED',
+    PRINTING = 'PRINTING',
 }
 
 export const jobInfoStateToString = (state: JobState): string => {
     switch (state) {
         case JobState.FIN_STOPPED:
             return 'STOPPED';
+        case JobState.PRINTING:
+            return 'PRINTING';
         default:
             return `Unknown (${state})`;
     }
