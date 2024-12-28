@@ -7,7 +7,7 @@ import { startPolling } from '@/prusa';
 import { initDatabase } from '@/store';
 
 const PORT = (() => {
-    const port = process.env.PORT || 3000;
+    const port = (process.env.PORT || 3000) as string | number;
 
     if (typeof port === 'string') {
         return parseInt(port, 10);
@@ -28,20 +28,24 @@ async function main(): Promise<void> {
         console.log(`Server is running on http://${HTTP_HOST}:${PORT}`);
     });
 
-    process.on('SIGINT', async () => {
-        await sendToAllAuthedUsers('Bot is stopping...');
+    if (process.env.NODE_ENV !== 'development') {
+        process.on('SIGINT', async () => {
+            await sendToAllAuthedUsers('Bot is stopping...');
 
-        process.exit(0);
-    });
+            process.exit(0);
+        });
 
-    process.on('SIGTERM', async () => {
-        await sendToAllAuthedUsers('Bot is stopping...');
+        process.on('SIGTERM', async () => {
+            await sendToAllAuthedUsers('Bot is stopping...');
 
-        process.exit(0);
-    });
+            process.exit(0);
+        });
+    }
 
     // send message on start
-    await sendToAllAuthedUsers('Bot started');
+    if (process.env.NODE_ENV !== 'development') {
+        await sendToAllAuthedUsers('Bot started');
+    }
 
     console.info('Bot is running');
 }

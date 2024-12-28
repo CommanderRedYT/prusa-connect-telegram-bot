@@ -26,6 +26,29 @@ let pushed = false;
 
 const answerCallbacks: Record<string, (msg: Message) => void> = {};
 
+const temporarySilentForUser: Record<string, string[]> = {};
+
+export const addTemporarySilentForUser = (
+    userId: number,
+    printerId: string,
+): void => {
+    const userIdStr = userId.toString();
+
+    if (!temporarySilentForUser[userIdStr]) {
+        temporarySilentForUser[userIdStr] = [];
+    }
+
+    temporarySilentForUser[userIdStr].push(printerId);
+};
+
+export const removeTemporarySilentForUser = (printerId: string): void => {
+    Object.keys(temporarySilentForUser).forEach(userIdStr => {
+        temporarySilentForUser[userIdStr] = temporarySilentForUser[
+            userIdStr
+        ].filter(id => id !== printerId);
+    });
+};
+
 export type Command = {
     name: string;
     description: string;
@@ -261,6 +284,10 @@ export const sendMessageForSpecificPrinter = async (
     );
 
     subscribedUsers.forEach(sub => {
+        if (temporarySilentForUser[sub.chat_id]?.includes(printerId)) {
+            return;
+        }
+
         bot.sendMessage(sub.chat_id, message, options);
     });
 };

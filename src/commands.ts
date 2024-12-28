@@ -2,6 +2,7 @@ import dedent from 'dedent-js';
 import moment from 'moment';
 
 import {
+    addTemporarySilentForUser,
     pushRegisteredCommands,
     registerCommand,
     registerHelpCommand,
@@ -115,6 +116,11 @@ const registerCommands = async (): Promise<boolean> => {
                     bot.sendMessage(
                         msg.chat.id,
                         'Invalid printer. Please try again.',
+                        {
+                            reply_markup: {
+                                remove_keyboard: true,
+                            },
+                        },
                     );
 
                     return;
@@ -125,6 +131,11 @@ const registerCommands = async (): Promise<boolean> => {
                 bot.sendMessage(
                     msg.chat.id,
                     `Subscribed to printer ${printer.name}`,
+                    {
+                        reply_markup: {
+                            remove_keyboard: true,
+                        },
+                    },
                 );
             };
         },
@@ -181,6 +192,11 @@ const registerCommands = async (): Promise<boolean> => {
                     bot.sendMessage(
                         msg.chat.id,
                         'Invalid printer. Please try again.',
+                        {
+                            reply_markup: {
+                                remove_keyboard: true,
+                            },
+                        },
                     );
 
                     return;
@@ -191,6 +207,11 @@ const registerCommands = async (): Promise<boolean> => {
                 bot.sendMessage(
                     msg.chat.id,
                     `Unsubscribed from printer ${printer.name}`,
+                    {
+                        reply_markup: {
+                            remove_keyboard: true,
+                        },
+                    },
                 );
             };
         },
@@ -260,13 +281,22 @@ const registerCommands = async (): Promise<boolean> => {
                     await bot.sendMessage(
                         msg.chat.id,
                         'Invalid printer. Please try again.',
+                        {
+                            reply_markup: {
+                                remove_keyboard: true,
+                            },
+                        },
                     );
 
                     return;
                 }
 
                 if (!printer.job_info) {
-                    await bot.sendMessage(msg.chat.id, 'No job found');
+                    await bot.sendMessage(msg.chat.id, 'No job found', {
+                        reply_markup: {
+                            remove_keyboard: true,
+                        },
+                    });
                     return;
                 }
 
@@ -277,6 +307,7 @@ const registerCommands = async (): Promise<boolean> => {
                 Progress: ${printer.job_info.progress}%
                 Printing since: ${moment().subtract(printer.job_info.time_printing, 'seconds').format('HH:mm:ss DD.MM.YYYY')}
                 Estimated time remaining: ${moment.duration(printer.job_info.time_remaining, 'seconds').humanize()}
+                Total time: ${moment.duration(printer.job_info.time_printing + printer.job_info.time_remaining, 'seconds').humanize()}
                 `;
 
                 const previewImageArrayBuffer = await getPreviewData(printer);
@@ -292,13 +323,88 @@ const registerCommands = async (): Promise<boolean> => {
                         {
                             caption: response,
                             parse_mode: 'HTML',
+                            reply_markup: {
+                                remove_keyboard: true,
+                            },
                         },
                         { filename: 'preview.png' },
                     );
                 } else {
                     await bot.sendMessage(msg.chat.id, response, {
                         parse_mode: 'HTML',
+                        reply_markup: {
+                            remove_keyboard: true,
+                        },
                     });
+                }
+            };
+        },
+    });
+
+    registerCommand({
+        name: 'shutup',
+        description: 'Disable notifications for a printer',
+        requiresAuth: true,
+        handler: async (bot, msg) => {
+            const subscriptions = await listSubscriptions();
+            const printers = Object.values(getPrinterStates());
+
+            const filteredPrinters = printers.filter(printer =>
+                subscriptions.find(sub => sub.printer_id === printer.uuid),
+            );
+
+            const names = Array.from(
+                new Set(filteredPrinters.map(printer => printer.name)),
+            );
+
+            if (!names.length) {
+                await bot.sendMessage(
+                    msg.chat.id,
+                    'You are not subscribed to any printers.',
+                );
+
+                return null;
+            }
+
+            // create a menu with all printer names
+            const keyboard = {
+                reply_markup: {
+                    keyboard: [
+                        ...names.map(name => [{ text: name }]),
+                        [{ text: 'All printers' }],
+                    ],
+                    one_time_keyboard: true,
+                },
+            };
+
+            await bot.sendMessage(msg.chat.id, 'Choose a printer:', keyboard);
+
+            return message => {
+                const printerOrPrinters =
+                    message.text === 'All printers'
+                        ? filteredPrinters
+                        : printers.find(p => p.name === message.text);
+
+                if (!printerOrPrinters) {
+                    bot.sendMessage(
+                        msg.chat.id,
+                        'Invalid printer. Please try again.',
+                        {
+                            reply_markup: {
+                                remove_keyboard: true,
+                            },
+                        },
+                    );
+
+                    return;
+                }
+
+                const printerIds = Array.isArray(printerOrPrinters)
+                    ? printerOrPrinters.map(p => p.uuid)
+                    : [printerOrPrinters.uuid];
+
+                for (const printerId of printerIds) {
+                    addTemporarySilentForUser(msg.chat.id, printerId);
                 }
             };
         },

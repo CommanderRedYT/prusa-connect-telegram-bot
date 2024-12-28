@@ -5,6 +5,7 @@ import * as fs from 'node:fs';
 import type { SendMessageOptions } from 'node-telegram-bot-api';
 
 import {
+    removeTemporarySilentForUser,
     sendMessageForSpecificPrinter,
     sendPhotoForSpecificPrinter,
 } from '@/bot';
@@ -19,9 +20,9 @@ let previousPrinterStates: Record<string, Printer> = {};
 const lastUpdates: Record<string, moment.Moment> = {};
 
 const maximumTimeout = 1000 * 60 * 30; // 30 minutes
-const minimumTimeout = 1000 * 30; // 30 seconds
+const minimumTimeout = 1000 * 60 * 5; // 5 minutes
 
-const pollingIntervalMs = 10000 * 6; // 10 seconds
+const pollingIntervalMs = 1000 * 10; // 10 seconds
 
 const WRITE_DEBUG_FILES = process.env.WRITE_DEBUG_FILES === 'true';
 
@@ -257,12 +258,13 @@ export const handleUpdates = async (): Promise<void> => {
                     await sendMessage(str);
                 } else if (jobWasRunning) {
                     // job is done
-                    console.log('job is done for printer', printer.name);
-                    if (previousPrinter.job_info?.progress !== 100) {
-                        const str = `Print job on ${printer.name} is done!`;
 
-                        await sendMessageForSpecificPrinter(printer.uuid, str);
-                    }
+                    console.log('job is done for printer', printer.name);
+                    const str = `Print job on ${printer.name} is done!`;
+
+                    removeTemporarySilentForUser(printerId);
+
+                    await sendMessageForSpecificPrinter(printer.uuid, str);
                 }
             }
         }
