@@ -15,12 +15,12 @@
     "dedent-js": "^1.0.1",
     "deep-equal": "^2.2.3",
     "dotenv": "^16.4.5",
-    "express": "^4.21.2",
+    "express": "^5.1.0",
     "moment": "^2.30.1",
     "node-telegram-bot-api": "^0.66.0",
     "sqlite3": "^5.1.7",
     "typescript": "^5 <5.6.0",
-    "uuid": "^11.0.5"
+    "uuid": "^11.1.0"
   },
   "engines": {
     "node": ">=22"
@@ -29,7 +29,7 @@
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@types/deep-equal": "^1.0.4",
     "@types/dotenv": "^8.2.3",
-    "@types/express": "^5.0.0",
+    "@types/express": "^5.0.1",
     "@types/node": "^22.13.4",
     "@types/node-telegram-bot-api": "^0.64.7",
     "@types/uuid": "^10.0.0",
