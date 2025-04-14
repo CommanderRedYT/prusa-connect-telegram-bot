@@ -1,5 +1,7 @@
 FROM node:22-alpine AS base
 
+RUN apk add --no-cache python3
+
 FROM base AS deps
 
 WORKDIR /app
