@@ -20,12 +20,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: '22'
           cache: 'yarn'
-          cache-dependency-path: 'yarn.lock'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile --non-interactive
+        run: yarn install --frozen-lockfile --non-interactive --prefer-offline
 
       - name: Run ESLint
         continue-on-error: true
@@ -46,12 +45,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: '22'
           cache: 'yarn'
-          cache-dependency-path: 'yarn.lock'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile --non-interactive
+        run: yarn install --frozen-lockfile --non-interactive --prefer-offline
 
       - name: Run TypeScript typecheck
         run: yarn typecheck
