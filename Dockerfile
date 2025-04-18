@@ -2,6 +2,8 @@ FROM node:22-alpine AS base
 
 RUN apk add --update --no-cache python3 make gcc g++
 
+RUN python3 -m pip install setuptools
+
 FROM base AS deps
 
 WORKDIR /app
